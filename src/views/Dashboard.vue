@@ -38,8 +38,8 @@ export default {
   },
   mounted () {
     this.chart = createChart(this.$refs.chart, { width: 400, height: 300, margin: '0 auto' })
-    this.candlestickSeries = this.chart.addCandlestickSeries()
-    this.$store.dispatch('setOHLCGlobal', { symbol: this.currentCurrency.symbol, newValue: {} })
+    this.candleStickSeries = this.chart.addCandlestickSeries()
+    this.$store.dispatch('setOHLC', { symbol: this.currentCurrency.symbol, newValue: {} })
       .then(() => {
         this.setDataToChart()
         this.handleMessage = ({ data }) => {
@@ -52,12 +52,18 @@ export default {
               low: message.LOW,
               close: message.CLOSE
             }
-            this.$store.dispatch('setOHLC', { symbol: message.FROMSYMBOL, record })
-              .then(() => {
-                if (message.FROMSYMBOL === this.currentCurrency.symbol) {
-                  this.candlestickSeries.update(record)
-                }
-              })
+            let promise
+            // We could check message.ACTION but better to check the store
+            if (record.time in this.$store.getters.OHLC[this.currentCurrency.symbol]) {
+              promise = this.$store.dispatch('updateOHLCRecord', { symbol: message.FROMSYMBOL, time: record.time, updatedValues: record })
+            } else {
+              promise = this.$store.dispatch('setOHLCRecord', { symbol: message.FROMSYMBOL, record })
+            }
+            promise.then((rec) => {
+              if (message.FROMSYMBOL === this.currentCurrency.symbol) {
+                this.candleStickSeries.update(rec)
+              }
+            })
           }
         }
         this.$store.dispatch('subscribeChannelsStream', subscribeChannels.get(this.currentCurrency))
@@ -66,22 +72,17 @@ export default {
   },
   methods: {
     setDataToChart () {
-      this.candlestickSeries.setData(this.dataChart)
+      const OHLCByCurrency = Object.values(this.$store.getters.OHLC[this.currentCurrency.symbol]).sort((a, b) => a.time - b.time)
+      this.candleStickSeries.setData(OHLCByCurrency)
     },
     changeCurrentCurrency (newCurrency) {
       this.$store.dispatch('unSubscribeChannelsStream', subscribeChannels.get(this.currentCurrency))
       this.currentCurrency = newCurrency
-      this.$store.dispatch('setOHLCGlobal', { symbol: this.currentCurrency.symbol, newValue: {} })
+      this.$store.dispatch('setOHLC', { symbol: this.currentCurrency.symbol, newValue: {} })
         .then(() => {
           this.setDataToChart()
           this.$store.dispatch('subscribeChannelsStream', subscribeChannels.get(this.currentCurrency))
         })
-    }
-  },
-  computed: {
-    dataChart () {
-      const OHLCByCurrency = this.$store.getters.OHLC[this.currentCurrency.symbol]
-      return Object.values(OHLCByCurrency).sort((a, b) => a - b)
     }
   },
   beforeDestroy () {

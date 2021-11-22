@@ -42,10 +42,14 @@ export default new Vuex.Store({
     setStreamer (state, streamer) {
       state.streamer = streamer
     },
-    setOHLC (state, { symbol, record }) {
+    setOHLCRecord (state, { symbol, record }) {
       state.OHLC_CANDLES[symbol][record.time] = record
     },
-    setOHLCGlobal (state, { symbol, newValue }) {
+    updateOHLCRecord (state, { symbol, time, updatedValues }) {
+      const record = state.OHLC_CANDLES[symbol][time]
+      Object.entries(updatedValues).forEach(([key, value]) => { record[key] = value })
+    },
+    setOHLC (state, { symbol, newValue }) {
       state.OHLC_CANDLES[symbol] = newValue
     },
     setApiKey (state, apiKey) {
@@ -95,11 +99,16 @@ export default new Vuex.Store({
     unSubscribeMessagesStream ({ getters }, cb) {
       getters.streamer.removeEventListener('message', cb)
     },
-    setOHLC ({ commit }, symbolWithRecord) {
-      commit('setOHLC', symbolWithRecord)
+    setOHLCRecord ({ getters, commit }, symbolWithRecord) {
+      commit('setOHLCRecord', symbolWithRecord)
+      return getters.OHLC[symbolWithRecord.symbol][symbolWithRecord.record.time]
     },
-    setOHLCGlobal ({ commit }, symbolWithNewValue) {
-      commit('setOHLCGlobal', symbolWithNewValue)
+    updateOHLCRecord ({ getters, commit }, paramObj) {
+      commit('updateOHLCRecord', paramObj)
+      return getters.OHLC[paramObj.symbol][paramObj.time]
+    },
+    setOHLC ({ commit }, symbolWithNewValue) {
+      commit('setOHLC', symbolWithNewValue)
     }
   },
   getters: {
