@@ -1,7 +1,6 @@
 # test_task_11_19_2021
-# Deploy
+# Deploy: https://leonmisha.github.io/test_task_11_19_2021/
 ```
-URL: https://leonmisha.github.io/test_task_11_19_2021/
 Email: test@gmail.com
 Password: zvVzdWvWp1yVdyfbZZx0
 ```
